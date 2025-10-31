@@ -36,11 +36,18 @@
       padding: 12px;
       border: none;
       border-radius: 10px;
-      background: #007aff;
-      color: #fff;
       font-size: 1rem;
       font-weight: 600;
       margin-top: 14px;
+      cursor: pointer;
+    }
+    #resetBtn {
+      background: #ff3b30;
+      color: #fff;
+    }
+    #backBtn {
+      background: #007aff;
+      color: #fff;
     }
     #totalBox {
       background: #e2f0ff;
@@ -57,7 +64,9 @@
   <h1>📊 투표 결과</h1>
   <div id="totalBox">전체 투표 인원: <span id="total">0</span>명</div>
   <div id="resultList"></div>
-  <button onclick="location.href='index.html'">↩ 다시 설정하기</button>
+
+  <button id="resetBtn" onclick="resetResults()">🧹 투표 결과만 리셋</button>
+  <button id="backBtn" onclick="location.href='index.html'">↩ 다시 설정하기</button>
 
   <script>
     const movies = JSON.parse(localStorage.getItem("voteMovies") || "[]" );
@@ -66,10 +75,7 @@
 
     document.getElementById("total").textContent = total;
 
-    // 만약 counts 길이가 영화 수보다 짧으면 0으로 채움
-    if (!Array.isArray(counts)) {
-      counts = [];
-    }
+    if (!Array.isArray(counts)) counts = [];
     if (counts.length < movies.length) {
       counts = counts.concat(Array(movies.length - counts.length).fill(0));
     }
@@ -79,6 +85,11 @@
     if (movies.length === 0) {
       list.innerHTML = "<p>투표 데이터가 없습니다.</p>";
     } else {
+      renderResults();
+    }
+
+    function renderResults() {
+      list.innerHTML = "";
       const combined = movies.map((m, i) => ({
         title: m.title,
         img: m.img,
@@ -100,9 +111,26 @@
         `;
         list.appendChild(div);
       });
+
+      document.getElementById("total").textContent =
+        JSON.parse(localStorage.getItem("voteTotal") || "0");
+    }
+
+    // ✅ 투표 결과만 리셋 (목록은 유지)
+    function resetResults() {
+      if (!confirm("투표 결과를 모두 0으로 초기화할까요? (영화 목록은 유지됩니다)")) return;
+
+      const newCounts = Array(movies.length).fill(0);
+      localStorage.setItem("voteCounts", JSON.stringify(newCounts));
+      localStorage.setItem("voteTotal", JSON.stringify(0));
+
+      counts = newCounts;
+      renderResults();
+      alert("투표 결과가 초기화되었습니다.");
     }
   </script>
 </body>
 </html>
+
 
 
