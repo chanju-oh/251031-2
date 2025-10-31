@@ -69,8 +69,6 @@
       font-size: 1.02rem;
       cursor: pointer;
     }
-
-    /* 투표 토스트 */
     #voteToast {
       position: fixed;
       top: 18px;
@@ -92,8 +90,6 @@
       z-index: 999;
     }
     #voteToast.show { opacity: 1; }
-
-    /* 결과보기 버튼 */
     #resultBtn {
       width: 100%;
       background: #007aff;
@@ -112,15 +108,14 @@
   <h1>🎬 영화 투표</h1>
   <div id="totalBox">전체 투표 인원: <span id="total">0</span>명</div>
 
-  <!-- 토스트 -->
   <div id="voteToast">✅ 투표되었습니다</div>
 
   <div id="movies"></div>
 
-  <!-- ✅ 결과보기 버튼 -->
   <button id="resultBtn" onclick="goToResult()">📊 결과 보기</button>
 
   <script>
+    // 저장된 데이터 읽기
     let movies = JSON.parse(localStorage.getItem("voteMovies") || "[]");
     let counts = JSON.parse(localStorage.getItem("voteCounts") || "[]");
     let total  = JSON.parse(localStorage.getItem("voteTotal") || "0");
@@ -129,7 +124,6 @@
     const moviesDiv = document.getElementById("movies");
     const totalSpan = document.getElementById("total");
 
-    // 영화 렌더링
     function renderMovies() {
       moviesDiv.innerHTML = "";
       movies.forEach((item, i) => {
@@ -151,14 +145,20 @@
     }
 
     function vote(i) {
+      // 혹시 counts 길이가 꼬였으면 다시 맞춰줌
       if (!Array.isArray(counts) || counts.length !== movies.length) {
         counts = Array(movies.length).fill(0);
       }
       counts[i] += 1;
       total += 1;
+
+      // 저장
       localStorage.setItem("voteCounts", JSON.stringify(counts));
       localStorage.setItem("voteTotal", JSON.stringify(total));
+
+      // 화면 업데이트
       totalSpan.textContent = total;
+
       showToast("✅ 투표되었습니다");
     }
 
@@ -170,17 +170,25 @@
       toastTimer = setTimeout(() => toast.classList.remove("show"), 800);
     }
 
-    // ✅ 결과 보기 버튼
     function goToResult() {
-      window.location.href = "result.html";
+      // 같은 폴더의 result.html로
+      window.location.href = "./result.html";
     }
 
+    // 시작 시
     if (movies.length === 0) {
       moviesDiv.innerHTML = "<p>설정 페이지에서 먼저 영화를 등록하세요.</p>";
       document.getElementById("resultBtn").style.display = "none";
     } else {
+      // counts가 짧으면 채움
+      if (!Array.isArray(counts) || counts.length !== movies.length) {
+        counts = Array(movies.length).fill(0);
+        localStorage.setItem("voteCounts", JSON.stringify(counts));
+      }
       renderMovies();
     }
   </script>
 </body>
 </html>
+
+
