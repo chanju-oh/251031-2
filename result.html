@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>영화 투표하기</title>
+  <title>투표 결과</title>
   <style>
     body {
       font-family: sans-serif;
@@ -11,165 +11,98 @@
       background: #fafafa;
       padding: 0 14px;
       font-size: 18px;
-      position: relative;
     }
-    h1 { text-align: center; margin-bottom: 10px; }
-    #totalBox {
-      background: #fff3cd;
-      border: 1px solid #ffeeba;
-      padding: 10px 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      text-align: center;
-      font-weight: 600;
-    }
-    #movies {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .movie {
+    h1 { text-align: center; margin-bottom: 16px; }
+    .result {
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 12px;
       padding: 14px;
+      margin-bottom: 12px;
       display: flex;
       gap: 14px;
       align-items: center;
-      min-height: 110px;
     }
     .poster {
-      width: 86px;
-      height: 120px;
+      width: 80px;
+      height: 110px;
       background: #f2f2f2;
       object-fit: cover;
       border-radius: 6px;
-      flex: 0 0 86px;
+      flex: 0 0 80px;
     }
-    .movie-content {
-      flex: 1;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-    .movie-name {
-      font-weight: 700;
-      font-size: 1.1em;
-      word-break: keep-all;
-    }
-    .vote-btn {
-      background: #ff9f0a;
+    button {
+      width: 100%;
+      padding: 12px;
       border: none;
       border-radius: 10px;
-      min-height: 50px;
-      min-width: 110px;
+      background: #007aff;
       color: #fff;
-      font-weight: 600;
-      font-size: 1.02rem;
-      cursor: pointer;
-    }
-
-    /* 투표 토스트 */
-    #voteToast {
-      position: fixed;
-      top: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #34c759;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 999px;
-      font-weight: 600;
       font-size: 1rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease-out;
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      z-index: 999;
+      font-weight: 600;
+      margin-top: 14px;
     }
-    #voteToast.show { opacity: 1; }
+    #totalBox {
+      background: #e2f0ff;
+      border: 1px solid #cfe2ff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      text-align: center;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
-  <h1>🎬 영화 투표</h1>
+  <h1>📊 투표 결과</h1>
   <div id="totalBox">전체 투표 인원: <span id="total">0</span>명</div>
-
-  <!-- 토스트 -->
-  <div id="voteToast">✅ 투표되었습니다</div>
-
-  <div id="movies"></div>
+  <div id="resultList"></div>
+  <button onclick="location.href='index.html'">↩ 다시 설정하기</button>
 
   <script>
-    let movies = JSON.parse(localStorage.getItem("voteMovies") || "[]");
-    let counts = JSON.parse(localStorage.getItem("voteCounts") || "[]");
-    let total  = JSON.parse(localStorage.getItem("voteTotal") || "0");
-    let toastTimer = null;
+    const movies = JSON.parse(localStorage.getItem("voteMovies") || "[]" );
+    let counts   = JSON.parse(localStorage.getItem("voteCounts") || "[]" );
+    const total  = JSON.parse(localStorage.getItem("voteTotal")  || "0"  );
 
-    const moviesDiv = document.getElementById("movies");
-    const totalSpan = document.getElementById("total");
+    document.getElementById("total").textContent = total;
 
-    // 화면에 영화 렌더링
-    function renderMovies() {
-      moviesDiv.innerHTML = "";
-      movies.forEach((item, i) => {
+    // 만약 counts 길이가 영화 수보다 짧으면 0으로 채움
+    if (!Array.isArray(counts)) {
+      counts = [];
+    }
+    if (counts.length < movies.length) {
+      counts = counts.concat(Array(movies.length - counts.length).fill(0));
+    }
+
+    const list = document.getElementById("resultList");
+
+    if (movies.length === 0) {
+      list.innerHTML = "<p>투표 데이터가 없습니다.</p>";
+    } else {
+      const combined = movies.map((m, i) => ({
+        title: m.title,
+        img: m.img,
+        count: counts[i] || 0
+      })).sort((a, b) => b.count - a.count);
+
+      combined.forEach((item, idx) => {
         const div = document.createElement("div");
-        div.className = "movie";
+        div.className = "result";
         const imgTag = item.img
           ? `<img src="${item.img}" alt="${item.title}" class="poster" onerror="this.style.display='none'">`
           : `<div class="poster"></div>`;
         div.innerHTML = `
           ${imgTag}
-          <div class="movie-content">
-            <div class="movie-name">${item.title}</div>
-            <button class="vote-btn" onclick="vote(${i})">투표</button>
+          <div>
+            <strong>${idx === 0 ? "🥇 " : ""}${item.title}</strong><br>
+            ${item.count}표
           </div>
         `;
-        moviesDiv.appendChild(div);
+        list.appendChild(div);
       });
-      totalSpan.textContent = total;
-    }
-
-    // 투표 함수
-    function vote(i) {
-      // counts 배열 크기 안 맞을 가능성 방어
-      if (!Array.isArray(counts) || counts.length !== movies.length) {
-        counts = Array(movies.length).fill(0);
-      }
-      counts[i] += 1;
-      total += 1;
-
-      // 저장
-      localStorage.setItem("voteCounts", JSON.stringify(counts));
-      localStorage.setItem("voteTotal", JSON.stringify(total));
-
-      // 전체 인원 표시 업데이트
-      totalSpan.textContent = total;
-
-      // 토스트
-      showToast("✅ 투표되었습니다");
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById("voteToast");
-      toast.textContent = msg;
-      toast.classList.add("show");
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-      }, 800);
-    }
-
-    // 페이지 들어오면 바로 렌더
-    if (movies.length === 0) {
-      // 설정을 안 하고 바로 들어온 경우
-      moviesDiv.innerHTML = "<p>설정 페이지에서 먼저 영화를 등록하세요.</p>";
-    } else {
-      renderMovies();
     }
   </script>
 </body>
 </html>
+
+
