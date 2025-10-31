@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>영화 투표</title>
+  <style>
+    :root {
+      --base-font: 18px;
+      --btn-height: 54px;
+      --radius: 10px;
+    }
+    body {
+      font-family: sans-serif;
+      max-width: 720px;
+      margin: 30px auto;
+      line-height: 1.5;
+      font-size: var(--base-font);
+      padding: 0 14px;
+      background: #fafafa;
+      position: relative;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .input-group {
+      background: #fff;
+      border: 1px solid #eee;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: var(--radius);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .input-group strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 6px 0;
+      font-size: 1em;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 16px;
+      min-height: var(--btn-height);
+      font-size: 1.05em;
+      border: none;
+      border-radius: 8px;
+      background: #007aff;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    #voteArea {
+      margin-top: 22px;
+    }
+    #movies {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .movie {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      min-height: 110px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .poster {
+      width: 86px;
+      height: 120px;
+      background: #f2f2f2;
+      object-fit: cover;
+      flex: 0 0 86px;
+      border-radius: 6px;
+    }
+    .movie-content {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+    .movie-name {
+      font-weight: 700;
+      font-size: 1.1em;
+      word-break: keep-all;
+    }
+    .vote-right {
+      text-align: right;
+      min-width: 140px;
+    }
+    .vote-right span {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+    }
+    .small-btn {
+      background: #ff9f0a;
+      min-height: 48px;
+      width: 110px;
+      font-size: 1em;
+    }
+
+    /* ✅ 여기: 투표 알림 토스트 */
+    #voteToast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #34c759;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease-out;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      z-index: 999;
+    }
+    #voteToast.show {
+      opacity: 1;
+    }
+
+    @media (min-width: 768px) {
+      body {
+        font-size: 19px;
+      }
+      .movie {
+        gap: 18px;
+      }
+      .poster {
+        width: 95px;
+        height: 132px;
+      }
+      .movie-name {
+        font-size: 1.15em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 영화 투표 만들기</h1>
+  <p>영화 이름과 포스터 이미지 주소를 입력하세요.</p>
+
+  <!-- ✅ 토스트 -->
+  <div id="voteToast">✅ 투표되었습니다</div>
+
+  <!-- 영화 1 -->
+  <div class="input-group">
+      <strong>영화 1</strong>
+      <input id="m1" placeholder="영화 이름 예) 인사이드 아웃 2" />
+      <input id="img1" placeholder="포스터 이미지 주소 (비워도 됨)" />
+  </div>
+
+  <!-- 영화 2 -->
+  <div class="input-group">
+      <strong>영화 2</strong>
+      <input id="m2" placeholder="영화 이름 예) 콘크리트 유토피아" />
+      <input id="img2" placeholder="포스터 이미지 주소 (비워도 됨)" />
+  </div>
+
+  <!-- 영화 3 -->
+  <div class="input-group">
+      <strong>영화 3</strong>
+      <input id="m3" placeholder="영화 이름 예) 듄: 파트2" />
+      <input id="img3" placeholder="포스터 이미지 주소 (비워도 됨)" />
+  </div>
+
+  <button style="width:100%;" onclick="startVote()">📢 투표 시작</button>
+
+  <div id="voteArea" style="display:none;">
+    <h2>투표하기</h2>
+    <div id="movies"></div>
+    <div style="margin-top:18px;">
+      <button style="width:100%; background:#34c759;" onclick="showResults()">📊 결과 보기</button>
+    </div>
+  </div>
+
+  <script>
+    let counts = [];
+    let movies = [];   // { title, img }
+    let toastTimer = null;
+
+    function startVote() {
+      const titles = [m1.value, m2.value, m3.value];
+      const imgs   = [img1.value, img2.value, img3.value];
+
+      movies = titles
+        .map((t, idx) => ({ title: t.trim(), img: imgs[idx].trim() }))
+        .filter(item => item.title !== "");
+
+      if (movies.length === 0) {
+        alert("적어도 한 개의 영화를 입력하세요!");
+        return;
+      }
+
+      counts = Array(movies.length).fill(0);
+      document.getElementById("voteArea").style.display = "block";
+
+      const movieDiv = document.getElementById("movies");
+      movieDiv.innerHTML = "";
+
+      movies.forEach((item, i) => {
+        const div = document.createElement("div");
+        div.className = "movie";
+
+        const imgTag = item.img
+          ? `<img src="${item.img}" alt="${item.title}" class="poster" onerror="this.style.display='none'">`
+          : `<div class="poster"></div>`;
+
+        div.innerHTML = `
+          ${imgTag}
+          <div class="movie-content">
+            <div class="movie-name">${item.title}</div>
+            <div class="vote-right">
+              <span><strong id="c${i}">0</strong>표</span>
+              <button class="small-btn" onclick="vote(${i})">투표</button>
+            </div>
+          </div>
+        `;
+        movieDiv.appendChild(div);
+      });
+
+      window.scrollTo({ top: document.getElementById("voteArea").offsetTop - 10, behavior: "smooth" });
+    }
+
+    function vote(i) {
+      counts[i]++;
+      document.getElementById("c" + i).textContent = counts[i];
+
+      // ✅ 토스트 보여주기
+      showToast("✅ 투표되었습니다");
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("voteToast");
+      toast.textContent = message;
+      toast.classList.add("show");
+
+      // 이전 타이머가 있으면 제거
+      if (toastTimer) clearTimeout(toastTimer);
+
+      // 0.8초(800ms) 뒤에 사라지게
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 800);
+    }
+
+    function showResults() {
+      const resultData = movies.map((item, i) => ({
+        title: item.title,
+        img: item.img,
+        count: counts[i]
+      }));
+      localStorage.setItem("voteResults", JSON.stringify(resultData));
+      window.location.href = "result.html";
+    }
+  </script>
+</body>
+</html>
+

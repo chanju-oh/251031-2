@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>투표 결과</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 520px;
+      margin: 40px auto;
+      line-height: 1.5;
+    }
+    h1 { text-align: center; }
+    .result {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .poster {
+      width: 70px;
+      height: 100px;
+      background: #f2f2f2;
+      object-fit: cover;
+      border-radius: 4px;
+      flex: 0 0 70px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 투표 결과</h1>
+  <div id="resultList"></div>
+  <button onclick="location.href='index.html'">다시 투표하기</button>
+
+  <script>
+    const data = JSON.parse(localStorage.getItem("voteResults") || "[]");
+    const list = document.getElementById("resultList");
+
+    if (data.length === 0) {
+      list.innerHTML = "<p>투표 데이터가 없습니다.</p>";
+    } else {
+      // 표 많은 순으로 정렬
+      data.sort((a, b) => b.count - a.count);
+
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "result";
+
+        const imgTag = item.img
+          ? `<img src="${item.img}" alt="${item.title}" class="poster" onerror="this.style.display='none'">`
+          : `<div class="poster"></div>`;
+
+        div.innerHTML = `
+          ${imgTag}
+          <div>
+            <strong>${item.title}</strong><br>
+            ${item.count}표
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
